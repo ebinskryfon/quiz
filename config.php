@@ -18,4 +18,13 @@ mysqli_set_charset($conn, "utf8mb4");
 
 // Start session
 session_start();
+
+// Authentication Check
+$current_page = basename($_SERVER['PHP_SELF']);
+$public_pages = ['login.php'];
+
+if (!isset($_SESSION['admin_logged_in']) && !in_array($current_page, $public_pages)) {
+    header("Location: login.php");
+    exit();
+}
 ?>

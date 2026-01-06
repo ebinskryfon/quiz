@@ -1,3 +1,11 @@
+<?php
+require_once 'config.php';
+
+// Get statistics
+$teams_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM teams"))['count'];
+$rounds_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM rounds"))['count'];
+$questions_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM questions"))['count'];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,6 +39,9 @@
             margin-bottom: 40px;
             text-align: center;
             border-top: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .header h1 {
@@ -143,26 +154,46 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: #f8d7da;
+            color: #721c24;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border: 1px solid #f5c6cb;
+        }
+
+        .logout-btn:hover {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏆 Quiz Scoring System</h1>
-            <p>Comprehensive Quiz Management Dashboard</p>
+            <div style="text-align: left;">
+                <h1>🏆 Quiz Scoring System</h1>
+                <p>Comprehensive Quiz Management Dashboard</p>
+            </div>
+            <a href="logout.php" class="logout-btn">Logout</a>
         </div>
 
         <div class="stats">
             <div class="stat-card">
-                <h3>12</h3>
+                <h3><?php echo $teams_count; ?></h3>
                 <p>Total Teams</p>
             </div>
             <div class="stat-card">
-                <h3>5</h3>
+                <h3><?php echo $rounds_count; ?></h3>
                 <p>Active Rounds</p>
             </div>
             <div class="stat-card">
-                <h3>48</h3>
+                <h3><?php echo $questions_count; ?></h3>
                 <p>Total Questions</p>
             </div>
         </div>
@@ -202,6 +233,12 @@
                 <div class="icon">📊</div>
                 <h3>Track Scores</h3>
                 <p>Detailed score analysis</p>
+            </a>
+
+            <a href="public_leaderboard.php" class="menu-card">
+                <div class="icon">📺</div>
+                <h3>Public Display</h3>
+                <p>Live audience leaderboard</p>
             </a>
         </div>
     </div>
