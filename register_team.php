@@ -4,18 +4,41 @@ require_once 'config.php';
 $message = '';
 $error = '';
 
+// Handle Delete Request
+if (isset($_GET['delete'])) {
+    $delete_id = intval($_GET['delete']);
+    
+    // Check if team has scores
+    $check_scores = mysqli_query($conn, "SELECT id FROM scores WHERE team_id = $delete_id LIMIT 1");
+    if (mysqli_num_rows($check_scores) > 0) {
+        $error = "Cannot delete team. Scores are associated with this team.";
+    } else {
+        if (mysqli_query($conn, "DELETE FROM teams WHERE id = $delete_id")) {
+            $message = "Team deleted successfully!";
+        } else {
+            $error = "Error: " . mysqli_error($conn);
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $team_name = mysqli_real_escape_string($conn, $_POST['team_name']);
     $college_name = mysqli_real_escape_string($conn, $_POST['college_name']);
     $district = mysqli_real_escape_string($conn, $_POST['district']);
     $num_members = intval($_POST['num_members']);
+    $team_id = isset($_POST['team_id']) ? intval($_POST['team_id']) : 0;
     
     if (!empty($team_name) && !empty($college_name) && !empty($district) && $num_members > 0) {
-        $sql = "INSERT INTO teams (team_name, college_name, district, num_members) 
-                VALUES ('$team_name', '$college_name', '$district', $num_members)";
+        if ($team_id > 0) {
+            $sql = "UPDATE teams SET team_name='$team_name', college_name='$college_name', district='$district', num_members=$num_members WHERE id=$team_id";
+            $success_msg = "Team updated successfully!";
+        } else {
+            $sql = "INSERT INTO teams (team_name, college_name, district, num_members) VALUES ('$team_name', '$college_name', '$district', $num_members)";
+            $success_msg = "Team registered successfully!";
+        }
         
         if (mysqli_query($conn, $sql)) {
-            $message = "Team registered successfully!";
+            $message = $success_msg;
         } else {
             $error = "Error: " . mysqli_error($conn);
         }
@@ -152,6 +175,38 @@ $teams_query = mysqli_query($conn, "SELECT * FROM teams ORDER BY created_at DESC
         
         table td {
             color: #2c3e50;
+        }
+
+        .btn-edit, .btn-delete {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        
+        .btn-edit {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #5568d3;
+        }
+        
+        .btn-delete {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .btn-delete:hover {
+            background: #dc3545;
+            color: white;
         }
         
         /* Modal Styles */
@@ -345,6 +400,10 @@ $teams_query = mysqli_query($conn, "SELECT * FROM teams ORDER BY created_at DESC
             <button class="btn-primary" onclick="openModal()">+ Add New Team</button>
         </div>
 
+        <?php if ($message): ?>
+            <div class="message success"><?php echo $message; ?></div>
+        <?php endif; ?>
+
         <div class="teams-list">
             <?php if (mysqli_num_rows($teams_query) > 0): ?>
                 <table>
@@ -356,6 +415,7 @@ $teams_query = mysqli_query($conn, "SELECT * FROM teams ORDER BY created_at DESC
                             <th>District</th>
                             <th>Members</th>
                             <th>Registered</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -367,6 +427,10 @@ $teams_query = mysqli_query($conn, "SELECT * FROM teams ORDER BY created_at DESC
                                 <td><?php echo htmlspecialchars($team['district']); ?></td>
                                 <td><?php echo $team['num_members']; ?></td>
                                 <td><?php echo date('M d, Y', strtotime($team['created_at'])); ?></td>
+                                <td>
+                                    <button class="btn-edit" onclick='openEditModal(<?php echo $team['id']; ?>, <?php echo htmlspecialchars(json_encode($team['team_name']), ENT_QUOTES); ?>, <?php echo htmlspecialchars(json_encode($team['college_name']), ENT_QUOTES); ?>, <?php echo htmlspecialchars(json_encode($team['district']), ENT_QUOTES); ?>, <?php echo $team['num_members']; ?>)'>Edit</button>
+                                    <a href="?delete=<?php echo $team['id']; ?>" class="btn-delete" onclick="return confirm('Are you sure you want to delete this team?');">Delete</a>
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
@@ -378,22 +442,20 @@ $teams_query = mysqli_query($conn, "SELECT * FROM teams ORDER BY created_at DESC
     </div>
 
     <!-- Modal -->
-    <div id="teamModal" class="modal <?php echo ($message || $error) ? 'show' : ''; ?>">
+    <div id="teamModal" class="modal <?php echo ($error) ? 'show' : ''; ?>">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Add New Team</h2>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
 
-            <?php if ($message): ?>
-                <div class="message success"><?php echo $message; ?></div>
-            <?php endif; ?>
-            
             <?php if ($error): ?>
                 <div class="message error"><?php echo $error; ?></div>
             <?php endif; ?>
 
             <form method="POST" action="">
+                <input type="hidden" id="team_id" name="team_id" value="">
+                
                 <div class="form-group">
                     <label for="team_name">Team Name *</label>
                     <input type="text" id="team_name" name="team_name" required>
@@ -425,6 +487,24 @@ $teams_query = mysqli_query($conn, "SELECT * FROM teams ORDER BY created_at DESC
     <script>
         function openModal() {
             document.getElementById('teamModal').classList.add('show');
+            document.getElementById('team_id').value = '';
+            document.getElementById('team_name').value = '';
+            document.getElementById('college_name').value = '';
+            document.getElementById('district').value = '';
+            document.getElementById('num_members').value = '';
+            document.querySelector('#teamModal h2').innerText = 'Add New Team';
+            document.querySelector('#teamModal .btn-primary').innerText = 'Register Team';
+        }
+
+        function openEditModal(id, name, college, district, members) {
+            document.getElementById('teamModal').classList.add('show');
+            document.getElementById('team_id').value = id;
+            document.getElementById('team_name').value = name;
+            document.getElementById('college_name').value = college;
+            document.getElementById('district').value = district;
+            document.getElementById('num_members').value = members;
+            document.querySelector('#teamModal h2').innerText = 'Edit Team';
+            document.querySelector('#teamModal .btn-primary').innerText = 'Update Team';
         }
 
         function closeModal() {
@@ -449,12 +529,6 @@ $teams_query = mysqli_query($conn, "SELECT * FROM teams ORDER BY created_at DESC
             }
         });
 
-        // Auto-close success message after 3 seconds
-        <?php if ($message): ?>
-            setTimeout(function() {
-                closeModal();
-            }, 3000);
-        <?php endif; ?>
     </script>
 </body>
 </html>

@@ -240,6 +240,12 @@ $questions_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as co
                 <h3>Public Display</h3>
                 <p>Live audience leaderboard</p>
             </a>
+
+            <a href="settings.php" class="menu-card">
+                <div class="icon">⚙️</div>
+                <h3>Settings</h3>
+                <p>Clear data and manage system</p>
+            </a>
         </div>
     </div>
 </body>
