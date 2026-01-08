@@ -547,7 +547,7 @@ while ($team = mysqli_fetch_assoc($leaderboard_query)) {
             <div class="last-update">Last updated: <span id="last-update-time">Just now</span></div>
         </div>
 
-        <?php if (count($teams) >= 3): ?>
+        <?php if (count($teams) > 0): ?>
             <div class="podium-section">
                 <h2 class="podium-title">🌟 Top 3 Champions 🌟</h2>
                 <div class="podium" id="podium">
@@ -767,6 +767,11 @@ while ($team = mysqli_fetch_assoc($leaderboard_query)) {
 
         function toggleGameOver() {
             const podiumSection = document.querySelector('.podium-section');
+            if (!podiumSection) {
+                alert('Not enough teams to display the podium.');
+                return;
+            }
+
             if (podiumSection.style.display === 'none' || podiumSection.style.display === '') {
                 podiumSection.style.display = 'block';
                 document.querySelector('.header h1').innerText = '🎉 Game Over - Final Results 🎉';
